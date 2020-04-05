@@ -1,7 +1,7 @@
 judge_for2020()
 {
-	int  a = 10;
-	b = a + 20;
+	int a=10;
+	b=a+20;
 	do {
 		if(b > a)continue;
 	}

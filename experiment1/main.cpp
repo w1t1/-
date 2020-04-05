@@ -5,6 +5,7 @@ string tmp = "";
 map<string, string>mp_name;
 map<string, int>mp_fg;
 int num = 0, pos = 0;
+char c;
 bool isLetter(char c)  //判断参数c是否为字母，返回bool值；
 {
     if(c >= 'a' && c <= 'z')
@@ -106,11 +107,9 @@ void init()
     mp_fg["("] = 1;
     mp_fg[")"] = 1;
 }
-char c;
-int main()
+void getword()
 {
-    init();
-    while((c = getchar()) != EOF)
+     while((c = getchar()) != EOF)
     {
         txt += c;
     }
@@ -152,4 +151,10 @@ int main()
         cout << sym << '\t' << tmp << '\n';
         tmp = "";
     }
+}
+
+int main()
+{
+    init();
+    getword();
 }
