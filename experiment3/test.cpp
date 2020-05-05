@@ -8,7 +8,21 @@ string code_txt;
 map<string, string>mp_name;
 char c;
 int code_txt_pos = 0;
+double NiBolan_ans;
 queue<string>q_txt;
+stack<string>NiBolan_stack;
+stack<double>NiBolan_stack_Num;
+queue<string>NiBolan_Buffer,NiBolan_queue;
+double string_double(string s)
+{
+    double ans=0;
+    for(int i=0;i<s.length();i++)
+    {
+        ans=ans*10.0;
+        ans+=(s[i]-'0');
+    }
+    return ans;
+}
 void init_getword()//初始化保留字和符号的hash表
 {
     mp_name["main"] = "mainsys";
@@ -120,7 +134,15 @@ void init()//初始化预测分析表
 
     init_getword();//初始化词法分析相关数据，代码和词法分析中init()函数相同
 }
-
+int priority(char op)               //判断运算符级别函数；其中* /的级别为2，+ -的级别为1；
+{
+    if (op == '+' || op == '-')
+        return 1;
+    if (op == '*' || op == '/')
+        return 2;
+    else
+        return 0;
+}
 bool isLetter(char c)  //判断参数c是否为字母，返回bool值；
 {
     if(c >= 'a' && c <= 'z')//小写字母
@@ -168,7 +190,9 @@ bool getword()//词法分析
     txt = "";
     string tmp = "";
     while(!anal.empty()) anal.pop();//清空分析栈
+    while(!anal.empty()) NiBolan_stack.pop();//清空分析栈
     while(!q_txt.empty())q_txt.pop();//清空剩余输入队列
+    while(!NiBolan_Buffer.empty())NiBolan_Buffer.pop();//清空剩余输入队列
     while((c = getchar()) != '\n' && c != EOF) //读取一行的句子
     {
         txt += c;
@@ -211,20 +235,114 @@ bool getword()//词法分析
 void analyze(string s)//预测可能的错误原因
 {
     if(s == "(")
-        printf("缺少(   ");
+        printf("缺少(   \n");
     if(s == ")")
-        printf("缺少)   ");
+        printf("缺少)   \n");
     if(s == "+")
-        printf("+缺少参数或者多余的+   ");
+        printf("+缺少参数或者多余的+   \n");
     if(s == "-")
-        printf("-缺少参数或者多余的-   ");
+        printf("-缺少参数或者多余的-   \n");
     if(s == "*")
-        printf("*缺少参数或者多余的*   ");
+        printf("*缺少参数或者多余的*   \n");
     if(s == "/")
-        printf("/缺少参数或者多余的/   ");
+        printf("/缺少参数或者多余的/   \n");
     if(txt[txt.length() - 1] != ';')
-        printf("缺少;");
+        printf("缺少;\n");
 }
+
+void setNiBolan(string tmp)
+{
+    if(isNumber(tmp[0]))
+    {
+        NiBolan_queue.push(tmp);
+    }
+    else if(isOperator(tmp[0]))
+    {
+        if(tmp[0] == ')')
+        {
+            while(NiBolan_stack.top() != "(")
+            {
+                NiBolan_queue.push(NiBolan_stack.top());
+                NiBolan_stack.pop();
+            }
+        }
+        else if(tmp[0] == '(')
+        {
+            NiBolan_stack.push("(");
+        }
+        else
+        {
+            while(1)
+            {
+                if(NiBolan_stack.empty() || NiBolan_stack.top() == "(" || priority(tmp[0]) > priority(NiBolan_stack.top()[0]))
+                {
+                    NiBolan_stack.push(tmp);
+                    break;
+                }
+                else
+                {
+                    NiBolan_queue.push(NiBolan_stack.top());
+                    NiBolan_stack.pop();
+                }
+            }
+
+        }
+    }
+
+}
+
+void getNiBolan(bool fg)
+{
+    NiBolan_ans=0;
+    while(!NiBolan_stack.empty())
+    {
+        if(NiBolan_stack.top() == ")" || NiBolan_stack.top() == "(")
+        {
+            NiBolan_stack.pop();
+            continue;
+        }
+        NiBolan_queue.push(NiBolan_stack.top());
+        NiBolan_stack.pop();
+    }
+    while(!NiBolan_queue.empty())
+    {
+        cout<<NiBolan_queue.front()<<" ";
+        if(!isOperator(NiBolan_queue.front()[0]))
+        {
+            NiBolan_stack_Num.push(string_double(NiBolan_queue.front()));
+        }
+        else 
+        {
+            double num2=NiBolan_stack_Num.top();
+            NiBolan_stack_Num.pop();
+            double num1=NiBolan_stack_Num.top();
+            NiBolan_stack_Num.pop();
+            /*cout<<endl<<num1<<"  "<<num2<<endl;*/
+            if(NiBolan_queue.front()=="+")
+            {
+                NiBolan_stack_Num.push(num1+num2);
+            }
+            else if(NiBolan_queue.front()=="-")
+            {
+                NiBolan_stack_Num.push(num1-num2);
+            }
+            else if(NiBolan_queue.front()=="*")
+            {
+                NiBolan_stack_Num.push(num1*num2);
+            }
+            else if(NiBolan_queue.front()=="/")
+            {
+                NiBolan_stack_Num.push(num1/num2);
+            }
+        }
+        NiBolan_queue.pop();
+    }
+    if(fg)
+    cout<<endl<<"结果为："<<NiBolan_stack_Num.top()<<endl;
+    NiBolan_stack_Num.pop();
+}
+
+
 bool check()//语法分析主函数
 {
     int num = 0, pos = 0;//pos:当前在第几个字符，num:当前是第几个单词
@@ -282,6 +400,8 @@ bool check()//语法分析主函数
                     analyze(wd_txt);
                 else
                     analyze(wd_anal);
+
+                getNiBolan(0);
                 return 0;
             }
             else if(m[p] == "ε") //预测分析表位置为ε
@@ -316,6 +436,19 @@ bool check()//语法分析主函数
         }
         if(anal.top() == wd_txt && anal.top() != "#") //分析栈顶和剩余输入串队首匹配成功但语法分析未结束
         {
+            if(isOperator(tmp[0]))
+            {
+                NiBolan_Buffer.push(tmp);
+            }
+            else
+            {
+                while(!NiBolan_Buffer.empty())
+                {
+                    setNiBolan(NiBolan_Buffer.front());
+                    NiBolan_Buffer.pop();
+                }
+                setNiBolan(tmp);
+            }
             anal.pop();
             continue;
         }
@@ -326,15 +459,30 @@ bool check()//语法分析主函数
                     printf("提示：缺少;");
                 else
                     cout << "accept" << endl;
+                getNiBolan(1);
                 return 0;
             }
         }
+        if(isOperator(tmp[0]))
+        {
+            NiBolan_Buffer.push(tmp);
+        }
+        else
+        {
+            while(!NiBolan_Buffer.empty())
+            {
+                setNiBolan(NiBolan_Buffer.front());
+                NiBolan_Buffer.pop();
+            }
+            setNiBolan(tmp);
+        }
+
     }
 }
 int main()
 {
-    freopen("in", "r", stdin);
-    freopen("out", "w", stdout);
+    /*   freopen("in", "r", stdin);
+       freopen("out", "w", stdout);*/
     init();
     while(!check())
     {

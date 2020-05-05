@@ -1,16 +1,11 @@
 #include<bits/stdc++.h>
 using namespace std;
-string txt, sym;
-string tmp = "";
-map<string, string>mp_name;
-map<string, int>mp_fg;
-int num = 0, pos = 0;
-char c;
+map<string, string>mp_name;//保留字、符号的类型hash
 bool isLetter(char c)  //判断参数c是否为字母，返回bool值；
 {
-    if(c >= 'a' && c <= 'z')
+    if(c >= 'a' && c <= 'z')//小写字母
         return true;
-    if(c >= 'A' && c <= 'Z')
+    if(c >= 'A' && c <= 'Z')//大写字母
         return true;
     return false;
 }
@@ -39,8 +34,15 @@ bool isOperator(char c) //判断参数c是否为运算符，返回bool值；
         return true;
     return false;
 }
-void init()
+bool isResWord(string resWord)//判断参数resWord是否为保留字，返回bool值；
 {
+    if(mp_name.find(resWord) != mp_name.end())//查询hash表
+        return true;
+    return false;
+}
+void init()//初始化保留字和符号的hash表
+{
+    //类型
     mp_name["main"] = "mainsys";
     mp_name["bool"] = "boolsys";
     mp_name["void"] = "voidsys";
@@ -65,6 +67,7 @@ void init()
     mp_name[">="] = "geq";
     mp_name["<="] = "leg";
     mp_name["!="] = "neq";
+    mp_name["=="] = "same";
     mp_name[","] = "comma";
     mp_name[";"] = "semicolon";
     mp_name["{"] = "lbparen";
@@ -73,88 +76,68 @@ void init()
     mp_name["]"] = "rbracket";
     mp_name["("] = "lparen";
     mp_name[")"] = "rparen";
-
-    mp_fg["main"] = 1;
-    mp_fg["bool"] = 1;
-    mp_fg["void"] = 1;
-    mp_fg["double"] = 1;
-    mp_fg["char"] = 1;
-    mp_fg["string"] = 1;
-    mp_fg["float"] = 1;
-    mp_fg["if"] = 1;
-    mp_fg["int"] = 1;
-    mp_fg["for"] = 1;
-    mp_fg["while"] = 1;
-    mp_fg["do"] = 1;
-    mp_fg["return"] = 1;
-    mp_fg["break"] = 1;
-    mp_fg["continue"] = 1;
-    mp_fg["+"] = 1;
-    mp_fg["-"] = 1;
-    mp_fg["/"] = 1;
-    mp_fg["="] = 1;
-    mp_fg[">"] = 1;
-    mp_fg["<"] = 1;
-    mp_fg[">="] = 1;
-    mp_fg["<="] = 1;
-    mp_fg["!="] = 1;
-    mp_fg[","] = 1;
-    mp_fg[";"] = 1;
-    mp_fg["{"] = 1;
-    mp_fg["}"] = 1;
-    mp_fg["["] = 1;
-    mp_fg["]"] = 1;
-    mp_fg["("] = 1;
-    mp_fg[")"] = 1;
 }
-void getword()
+void getword(string &txt)//对txt字符串进行分析，并输出
 {
-     while((c = getchar()) != EOF)
-    {
-        txt += c;
-    }
+    string tmp = "",sym;
+    int pos = 0;//标记文本串的位置
     while(pos < txt.length())
     {
-        if(txt[pos] == '\n' || txt[pos] == ' ' || txt[pos] == '\t')
+        if(txt[pos] == '\n' || txt[pos] == ' ' || txt[pos] == '\t')//如果遇到空格，换行符和制表符，直接略过
         {
             pos++;
             continue;
         }
-        if(tmp == "")
-            tmp += txt[pos++];
-        if(isLetter(tmp[0]))
+        tmp += txt[pos++];//读取一个字符
+        if(isLetter(tmp[0]))//如果是字母
         {
-            while(!isSpace(txt[pos]))
+            while(!isSpace(txt[pos]))//遇到空格就停止
             {
-                if(!isLetter(txt[pos]) && !isNumber(txt[pos]) && !isUnderLine(txt[pos]))
+                if(!isLetter(txt[pos]) && !isNumber(txt[pos]) && !isUnderLine(txt[pos]))//如果遇到非变量名能使用的字符就停止
                     break;
                 tmp += txt[pos++];
             }
-            if(mp_fg[tmp] == 1)
+            if(isResWord(tmp))//判断是否是保留字
                 sym = mp_name[tmp];
             else
                 sym = "IDENT";
         }
-        else if(isNumber(tmp[0]))
+        else if(isNumber(tmp[0]))//如果是字母
         {
-            while(isNumber(txt[pos]))
+            while(isNumber(txt[pos]))//一直取数直到遇到非数字
                 tmp += txt[pos++];
             sym = "NUMBER";
         }
-        else
+        else if(isOperator(tmp[0]))
         {
-            if((tmp[0] == '<' || tmp[0] == '>') && txt[pos] == '=')
+            if((tmp[0] == '<' || tmp[0] == '>' || tmp[0] == '!' || tmp[0] == '=') && txt[pos] == '=')//如果碰到两个字符的运算符
                 tmp += txt[pos++];
             sym = mp_name[tmp];
 
         }
-        cout << sym << '\t' << tmp << '\n';
+        else //遇到错误（可能是未引入的符号）
+        {
+            sym="error";
+        }
+        cout << sym << '\t' << tmp << '\n';//输出类型
         tmp = "";
     }
 }
-
+string Read_word()//从缓冲区读取文本，返回一个string
+{
+    string txt;
+    char c;
+    while((c = getchar()) != EOF)//遇到文件尾就停止
+    {
+        txt += c;
+    }
+    return txt;
+}
 int main()
 {
+    freopen("in.in","r",stdin);
+    freopen("out.out","w",stdout);
     init();
-    getword();
+    string word=Read_word();//读取文本
+    getword(word);
 }
